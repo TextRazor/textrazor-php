@@ -1,39 +1,21 @@
 <?php
+
 require_once('TextRazor.php');
 
-$api_key='DEMO';
+$api_key= $YOUR_API_KEY_HERE;
+$text = 'Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
 
 $textrazor = new TextRazor($api_key);
 
-$textrazor_params=array(
-	'extractors'=>'words,entities',
-	'apiKey'=>'DEMO',
-        'text'=>'Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.'
-);
+$textrazor->addExtractor('entities');
 
-$json_reply = $textrazor->sendPOST($textrazor_params);
-print($json_reply);
+$response = $textrazor->analyze($text);
 
-foreach ($json_reply['response']['entities'] as $entity) {
-	print($entity['entityId']);
-	print(PHP_EOL);
-}
-
-foreach ($json_reply['response']['entities'] as &$entity) {
-	print($entity['entityId']);
-	foreach ($json_reply['response']['entities'] as $entity2) {
-	$entity['other'] = &$entity2;
+if (isset($response['response']['entities'])) {
+	foreach ($response['response']['entities'] as $entity) {
+		print($entity['entityId']);
+		print(PHP_EOL);
 	}
-
-	print(PHP_EOL);
-}
-
-print('JO');
-
-foreach ($json_reply['response']['entities'] as $entity) {
-print('ENT2'); print(PHP_EOL);
-print($entity['other']); print(PHP_EOL);
-
 }
 
 
