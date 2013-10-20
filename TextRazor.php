@@ -139,7 +139,10 @@ class TextRazor {
 			'cleanupHTML' => $this->cleanupHTML,
 			'extractors' => implode(",", $this->extractors),
 			'rules' => $this->rules,
-			'languageOverride' => $this->languageOverride);
+			'languageOverride' => $this->languageOverride,
+			'entities.filterDbpediaTypes' => implode(",", $this->dbpediaTypeFilters),
+			'entities.filterFreebaseTypes' => implode(",", $this->freebaseTypeFilters)
+			);
 
 		return $this->sendPOST($textRazorParams);
 	}
