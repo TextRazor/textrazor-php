@@ -124,6 +124,23 @@ class TextRazor {
 		$this->languageOverride = $languageOverride;
 	}
 
+	public function addDbpediaTypeFilter($filter) {
+		if(!is_string($filter)) {
+			throw new Exception('TextRazor Error: filter must be a string');
+		}
+
+		array_push($this->dbpediaTypeFilters, $filter);	
+	}
+
+	public function addFreebaseTypeFilter($filter) {
+		if(!is_string($filter)) {
+			throw new Exception('TextRazor Error: filter must be a string');
+		}
+
+		array_push($this->freebaseTypeFilters, $filter);	
+	}
+
+
 	public function analyze($text) {
 		if(!is_string($text)) {
 			throw new Exception('TextRazor Error: text must be a UTF8 encoded string');
@@ -140,10 +157,16 @@ class TextRazor {
 			'extractors' => implode(",", $this->extractors),
 			'rules' => $this->rules,
 			'languageOverride' => $this->languageOverride,
-			'entities.filterDbpediaTypes' => implode(",", $this->dbpediaTypeFilters),
-			'entities.filterFreebaseTypes' => implode(",", $this->freebaseTypeFilters)
-			);
+			);	
 
+		if ($this->dbpediaTypeFilters) {
+			$textRazorParams['entities.filterDbpediaTypes'] = implode(",", $this->dbpediaTypeFilters);
+		}
+
+		if ($this->freebaseTypeFilters) {
+			$textRazorParams['entities.filterFreebaseTypes'] = implode(",", $this->freebaseTypeFilters);
+		}
+			
 		return $this->sendPOST($textRazorParams);
 	}
 
@@ -165,7 +188,7 @@ class TextRazor {
 
 		curl_setopt($ch, CURLOPT_POST, true );
 		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($textrazorParams));
-
+		
 		$reply = curl_exec ($ch);
 
 		$rc = curl_errno($ch);
@@ -180,7 +203,7 @@ class TextRazor {
 
 		curl_close ($ch);
 		unset($ch);
-
+		
 		$jsonReply = json_decode($reply,true);
 
 		return $jsonReply;
