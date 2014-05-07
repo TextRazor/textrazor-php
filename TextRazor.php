@@ -1,5 +1,31 @@
 <?php
 
+// http_build_query has its own ideas about how to serialize different types, so we use our own version here.
+class TextRazorQueryBuilder {
+    private $params = array();
+
+    public function add($key, $value) {
+			if (is_null($value)) {
+				return;
+			}
+			else if (is_array($value)) {
+				foreach ($value as $listItem) {
+					$this->add($key, $listItem);
+				}
+			}
+			else if (is_bool($value)) {
+				$this->add($key, $value ? "true" : "false");
+			}
+			else {
+				$this->params[] = urlencode($key) . '=' . urlencode($value);
+			}
+    }
+
+    public function build() {
+        return implode("&", $this->params);
+    }
+}
+
 class TextRazor {
 	private $apiKey;
 	private $endPoint;
@@ -32,16 +58,18 @@ class TextRazor {
 		$this->endPoint = 'http://api.textrazor.com/';
 		$this->secureEndPoint = 'https://api.textrazor.com/';
 
-		$this->enableCompression = true; 
-		$this->enableEncryption = false;  
+		$this->enableCompression = true;
+		$this->enableEncryption = false;
 
 		$this->extractors = array();
-		$this->rules = '';
+		$this->rules = NULL;
 		$this->cleanupHTML = false;
 		$this->languageOverride = NULL;
 
 		$this->dbpediaTypeFilters = array();
 		$this->freebaseTypeFilters = array();
+		$this->enrichmentQueries = array();
+		$this->allowOverlap = true;
 	}
 
 	public function setAPIKey($apiKey) {
@@ -90,7 +118,7 @@ class TextRazor {
 		}
 
 		$this->extractors = $extractors;
-	} 
+	}
 
 	public function addExtractor($extractor) {
 		if(!is_string($extractor)) {
@@ -124,12 +152,20 @@ class TextRazor {
 		$this->languageOverride = $languageOverride;
 	}
 
+	public function setAllowOverlap($allowOverlap) {
+		if (!is_bool($allowOverlap)) {
+			throw new Exception('TextRazor Error: allowOverlap must be a bool');
+		}
+
+		$this->allowOverlap = $allowOverlap;
+	}
+
 	public function addDbpediaTypeFilter($filter) {
 		if(!is_string($filter)) {
 			throw new Exception('TextRazor Error: filter must be a string');
 		}
 
-		array_push($this->dbpediaTypeFilters, $filter);	
+		array_push($this->dbpediaTypeFilters, $filter);
 	}
 
 	public function addFreebaseTypeFilter($filter) {
@@ -137,9 +173,16 @@ class TextRazor {
 			throw new Exception('TextRazor Error: filter must be a string');
 		}
 
-		array_push($this->freebaseTypeFilters, $filter);	
+		array_push($this->freebaseTypeFilters, $filter);
 	}
 
+	public function addEnrichmentQuery($query) {
+		if(!is_string($query)) {
+			throw new Exception('TextRazor Error: query must be a string');
+		}
+
+		array_push($this->enrichmentQueries, $query);
+	}
 
 	public function analyze($text) {
 		if(!is_string($text)) {
@@ -150,24 +193,22 @@ class TextRazor {
 			throw new Exception('TextRazor Error: Please specify at least one extractor');
 		}
 
-		$textRazorParams = array('extractors' => $this->extractors,
-			'apiKey' => $this->apiKey,
-			'text' => $text,
-			'cleanupHTML' => $this->cleanupHTML,
-			'extractors' => implode(",", $this->extractors),
-			'rules' => $this->rules,
-			'languageOverride' => $this->languageOverride,
-			);	
+		$builder = new TextRazorQueryBuilder();
 
-		if ($this->dbpediaTypeFilters) {
-			$textRazorParams['entities.filterDbpediaTypes'] = implode(",", $this->dbpediaTypeFilters);
-		}
+		$builder->add('extractors', $this->extractors);
+		$builder->add('apiKey', $this->apiKey);
+		$builder->add('text', $text);
+		$builder->add('cleanupHTML', $this->cleanupHTML);
+		$builder->add('extractors', $this->extractors);
+		$builder->add('rules', $this->rules);
+		$builder->add('languageOverride', $this->languageOverride);
 
-		if ($this->freebaseTypeFilters) {
-			$textRazorParams['entities.filterFreebaseTypes'] = implode(",", $this->freebaseTypeFilters);
-		}
-			
-		return $this->sendPOST($textRazorParams);
+		$builder->add('entities.allowOverlap', $this->allowOverlap);
+		$builder->add('entities.filterDbpediaTypes', $this->dbpediaTypeFilters);
+		$builder->add('entities.filterFreebaseTypes', $this->freebaseTypeFilters);
+		$builder->add('entities.enrichmentQueries', $this->enrichmentQueries);
+
+		return $this->sendPOST($builder->build());
 	}
 
 	public function sendPOST($textrazorParams) {
@@ -187,8 +228,8 @@ class TextRazor {
 		}
 
 		curl_setopt($ch, CURLOPT_POST, true );
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($textrazorParams));
-		
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $textrazorParams);
+
 		$reply = curl_exec ($ch);
 
 		$rc = curl_errno($ch);
@@ -198,16 +239,15 @@ class TextRazor {
 
 		$httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		if (200 != $httpStatus) {
-			throw new Exception('TextRazor Error: TextRazor returned HTTP code: ' . $httpStatus . ' Message:' . $reply);	
+			throw new Exception('TextRazor Error: TextRazor returned HTTP code: ' . $httpStatus . ' Message:' . $reply);
 		}
 
 		curl_close ($ch);
 		unset($ch);
-		
+
 		$jsonReply = json_decode($reply,true);
 
 		return $jsonReply;
 	}
 
 }
-
