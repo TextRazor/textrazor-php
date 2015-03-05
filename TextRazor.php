@@ -260,7 +260,7 @@ class TextRazor {
         return $builder;
     }
 
-    public function analyze_url($url) {
+    public function analyzeUrl($url) {
 		if(!is_string($url)) {
 			throw new Exception('TextRazor Error: url must be a UTF8 encoded string');
 		}
