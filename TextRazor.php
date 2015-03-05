@@ -70,6 +70,12 @@ class TextRazor {
 		$this->freebaseTypeFilters = array();
 		$this->enrichmentQueries = array();
 		$this->allowOverlap = true;
+
+        $this->cleanupMode = NULL;
+        $this->cleanupReturnCleaned = false;
+        $this->cleanupReturnRaw = false;
+        $this->cleanupUseMetadata = NULL;
+        $this->downloadUserAgent = NULL;
 	}
 
 	public function setAPIKey($apiKey) {
@@ -184,12 +190,49 @@ class TextRazor {
 		array_push($this->enrichmentQueries, $query);
 	}
 
-	public function analyze($text) {
-		if(!is_string($text)) {
-			throw new Exception('TextRazor Error: text must be a UTF8 encoded string');
-		}
 
-		if (empty($this->extractors)) {
+    public function setCleanupMode($cleanupMode) {
+        if(!is_string($cleanupMode)) {
+            throw new Exception('TextRazor Error: Invalid Cleanup Mode');
+        }
+
+        $this->cleanupMode = $cleanupMode;
+    }
+
+    public function setCleanupReturnCleaned($cleanupReturnCleaned) {
+        if(!is_bool($cleanupReturnCleaned)) {
+            throw new Exception('TextRazor Error: cleanupReturnCleaned must be a bool');
+        }
+
+        $this->cleanupReturnCleaned = $cleanupReturnCleaned;
+    }
+
+    public function setCleanupReturnRaw($cleanupReturnRaw) {
+        if(!is_bool($cleanupReturnRaw)) {
+            throw new Exception('TextRazor Error: cleanupReturnRaw must be a bool');
+        }
+
+        $this->cleanupReturnRaw = $cleanupReturnRaw;
+    }
+
+    public function setCleanupUseMetadata($cleanupUseMetadata) {
+        if(!is_bool($cleanupUseMetadata)) {
+            throw new Exception('TextRazor Error: cleanupUseMetadata must be a bool');
+        }
+
+        $this->cleanupUseMetadata = $cleanupUseMetadata;
+    }
+
+    public function setDownloadUserAgent($downloadUserAgent) {
+        if(!is_string($downloadUserAgent)) {
+            throw new Exception('TextRazor Error: Invalid downloadUserAgent');
+        }
+
+        $this->downloadUserAgent = $downloadUserAgent;
+    }
+
+    private function buildRequest() {
+        if (empty($this->extractors)) {
 			throw new Exception('TextRazor Error: Please specify at least one extractor');
 		}
 
@@ -197,7 +240,6 @@ class TextRazor {
 
 		$builder->add('extractors', $this->extractors);
 		$builder->add('apiKey', $this->apiKey);
-		$builder->add('text', $text);
 		$builder->add('cleanupHTML', $this->cleanupHTML);
 		$builder->add('extractors', $this->extractors);
 		$builder->add('rules', $this->rules);
@@ -207,6 +249,35 @@ class TextRazor {
 		$builder->add('entities.filterDbpediaTypes', $this->dbpediaTypeFilters);
 		$builder->add('entities.filterFreebaseTypes', $this->freebaseTypeFilters);
 		$builder->add('entities.enrichmentQueries', $this->enrichmentQueries);
+
+        $builder->add('cleanup.mode', $this->cleanupMode);
+        $builder->add('cleanup.returnCleaned', $this->cleanupReturnCleaned);
+        $builder->add('cleanup.returnRaw', $this->cleanupReturnRaw);
+        $builder->add('cleanup.useMetadata', $this->cleanupUseMetadata);
+
+        $builder->add('download.userAgent', $this->downloadUserAgent);
+
+        return $builder;
+    }
+
+    public function analyze_url($url) {
+		if(!is_string($url)) {
+			throw new Exception('TextRazor Error: url must be a UTF8 encoded string');
+		}
+
+        $builder = $this->buildRequest();
+        $builder->add('url', $url);
+
+		return $this->sendPOST($builder->build());
+	}
+
+	public function analyze($text) {
+		if(!is_string($text)) {
+			throw new Exception('TextRazor Error: text must be a UTF8 encoded string');
+		}
+
+        $builder = $this->buildRequest();
+        $builder->add('text', $text);
 
 		return $this->sendPOST($builder->build());
 	}
