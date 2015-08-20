@@ -26,96 +26,213 @@ class TextRazorQueryBuilder {
     }
 }
 
-class TextRazor {
-	private $apiKey;
-	private $endPoint;
-	private $secureEndPoint;
+/**
+* Represents global settings common to all TextRazor operations. Settings can be
+* enabled here, or with each request.
+*/
+class TextRazorSettings {
+    private static $apiKey;
+    private static $endPoint = 'http://api.textrazor.com/';
+    private static $secureEndPoint = 'https://api.textrazor.com/';
+    private static $enableEncryption = true;
+    private static $enableCompression = true;
 
-	private $enableEncryption;
-	private $enableCompression;
+    public static function setApiKey($apiKey) {
+        if(!is_string($apiKey)) {
+            throw new Exception('TextRazor Error: Invalid API Key');
+        }
 
-	private $extractors;
+        self::$apiKey = $apiKey;
+    }
 
-	private $rules;
+    public static function getApiKey() {
+        return self::$apiKey;
+    }
 
-	private $cleanupHTML;
+    public static function setEndPoint($endPoint) {
+        if(!is_string($endPoint)) {
+            throw new Exception('TextRazor Error: Invalid HTTP Endpoint');
+        }
 
-	private $languageOverride;
+        self::$endPoint = $endPoint;
+    }
 
-	private $dbpediaTypeFilters;
-	private $freebaseTypeFilters;
+    public static function getEndPoint() {
+        return self::$endPoint;
+    }
 
-	public function __construct($apiKey) {
-		if(!is_string($apiKey)) {
+    public static function setSecureEndPoint($endPoint) {
+        if(!is_string($endPoint)) {
+            throw new Exception('TextRazor Error: Invalid HTTPS Endpoint');
+        }
+
+        self::$secureEndPoint = $endPoint;
+    }
+
+    public static function getSecureEndPoint() {
+        return self::$secureEndPoint;
+    }
+
+    public static function setEnableCompression($enableCompression) {
+        if(!is_bool($enableCompression)) {
+            throw new Exception('TextRazor Error: enableCompression must be a bool');
+        }
+
+        self::$enableCompression = $enableCompression;
+    }
+
+    public static function getEnableCompression() {
+        return self::$enableCompression;
+    }
+
+    public static function setEnableEncryption($enableEncryption) {
+        if(!is_bool($enableEncryption)) {
+            throw new Exception('TextRazor Error: enableEncryption must be a bool');
+        }
+
+        self::$enableEncryption = $enableEncryption;
+    }
+
+    public static function getEnableEncryption() {
+        return self::$enableEncryption;
+    }
+}
+
+class TextRazorConnection {
+    private $apiKey;
+    private $endPoint;
+    private $secureEndPoint;
+    private $enableEncryption;
+    private $enableCompression;
+
+    function __construct($apiKey) {
+        $this->apiKey = TextRazorSettings::getApiKey();
+        $this->endPoint = TextRazorSettings::getEndPoint();
+        $this->secureEndPoint = TextRazorSettings::getSecureEndpoint();
+        $this->enableEncryption = TextRazorSettings::getEnableEncryption();
+        $this->enableCompression = TextRazorSettings::getEnableCompression();
+
+        if (isset($apiKey)) {
+            $this->apiKey = $apiKey;
+        }
+
+        if(!is_string($this->apiKey)) {
 			throw new Exception('TextRazor Error: Invalid API key');
 		}
 
-		if(!function_exists('curl_version')) {
-			throw new Exception('TextRazor Error: TextRazor requires cURL support to be enabled on your PHP installation');
+        if(!function_exists('curl_version')) {
+            throw new Exception('TextRazor Error: TextRazor requires cURL support to be enabled on your PHP installation');
+        }
+    }
+
+    public function setAPIKey($apiKey) {
+        if(!is_string($apiKey)) {
+            throw new Exception('TextRazor Error: Invalid API key');
+        }
+
+        $this->apiKey = $apiKey;
+    }
+
+    public function setEndPoint($endPoint) {
+        if(!is_string($endPoint)) {
+            throw new Exception('TextRazor Error: Invalid HTTP Endpoint');
+        }
+
+        $this->endPoint = $endPoint;
+    }
+
+    public function setSecureEndPoint($endPoint) {
+        if(!is_string($endPoint)) {
+            throw new Exception('TextRazor Error: Invalid HTTPS Endpoint');
+        }
+
+        $this->secureEndPoint = $endPoint;
+    }
+
+    public function setEnableCompression($enableCompression) {
+        if(!is_bool($enableCompression)) {
+            throw new Exception('TextRazor Error: enableCompression must be a bool');
+        }
+
+        $this->enableCompression = $enableCompression;
+    }
+
+    public function setEnableEncryption($enableEncryption) {
+        if(!is_bool($enableEncryption)) {
+            throw new Exception('TextRazor Error: enableEncryption must be a bool');
+        }
+
+        $this->enableEncryption = $enableEncryption;
+    }
+
+    public function sendRequest($textrazorParams, $path = '', $method = 'POST') {
+		$ch = curl_init();
+
+        if ($this->enableEncryption) {
+			curl_setopt($ch, CURLOPT_URL, $this->secureEndPoint . $path);
+		}
+		else {
+			curl_setopt($ch, CURLOPT_URL, $this->endPoint . $path);
 		}
 
-		$this->apiKey = $apiKey;
-		$this->endPoint = 'http://api.textrazor.com/';
-		$this->secureEndPoint = 'https://api.textrazor.com/';
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-		$this->enableCompression = true;
-		$this->enableEncryption = false;
+		if ($this->enableCompression) {
+			curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate');
+		}
 
-		$this->extractors = array();
-		$this->rules = NULL;
-		$this->cleanupHTML = false;
-		$this->languageOverride = NULL;
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method );
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $textrazorParams);
 
-		$this->dbpediaTypeFilters = array();
-		$this->freebaseTypeFilters = array();
-		$this->enrichmentQueries = array();
-		$this->allowOverlap = true;
+        $headers = array();
+        $headers[] = 'X-TextRazor-Key: ' . $this->apiKey;
 
-        $this->cleanupMode = NULL;
-        $this->cleanupReturnCleaned = false;
-        $this->cleanupReturnRaw = false;
-        $this->cleanupUseMetadata = NULL;
-        $this->downloadUserAgent = NULL;
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+		$reply = curl_exec ($ch);
+
+		$rc = curl_errno($ch);
+		if (0 != $rc) {
+			throw new Exception('TextRazor Error: Network problem connecting to TextRazor. CURL Error Code:' . $rc);
+		}
+
+		$httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		if (200 != $httpStatus) {
+			throw new Exception('TextRazor Error: TextRazor returned HTTP code: ' . $httpStatus . ' Message:' . $reply);
+		}
+
+		curl_close ($ch);
+		unset($ch);
+
+		$jsonReply = json_decode($reply,true);
+
+		return $jsonReply;
 	}
+}
 
-	public function setAPIKey($apiKey) {
-		if(!is_string($apiKey)) {
-			throw new Exception('TextRazor Error: Invalid API key');
-		}
+class TextRazor extends TextRazorConnection {
+	private $extractors = array();
 
-		$this->apiKey = $apiKey;
-	}
+	private $rules = NULL;
 
-	public function setEndPoint($endPoint) {
-		if(!is_string($endPoint)) {
-			throw new Exception('TextRazor Error: Invalid HTTP Endpoint');
-		}
+	private $cleanupHTML = false;
+	private $languageOverride = NULL;
 
-		$this->endPoint = $endPoint;
-	}
+	private $dbpediaTypeFilters = array();
+	private $freebaseTypeFilters = array();
+    private $enrichmentQueries = array();
+    private $allowOverlap = true;
+    private $entityDictionaries = array();
 
-	public function setSecureEndPoint($endPoint) {
-		if(!is_string($endPoint)) {
-			throw new Exception('TextRazor Error: Invalid HTTPS Endpoint');
-		}
+    private $cleanupMode = NULL;
+	private $cleanupReturnCleaned = false;
+    private $cleanupReturnRaw = false;
+    private $cleanupUseMetadata = false;
 
-		$this->secureEndPoint = $endPoint;
-	}
+    private $downloadUserAgent = NULL;
 
-	public function setEnableCompression($enableCompression) {
-		if(!is_bool($enableCompression)) {
-			throw new Exception('TextRazor Error: enableCompression must be a bool');
-		}
-
-		$this->enableCompression = $enableCompression;
-	}
-
-	public function setEnableEncryption($enableEncryption) {
-		if(!is_bool($enableEncryption)) {
-			throw new Exception('TextRazor Error: enableEncryption must be a bool');
-		}
-
-		$this->enableEncryption = $enableEncryption;
+	public function __construct($apiKey = NULL) {
+        parent::__construct($apiKey);
 	}
 
 	public function setExtractors($extractors) {
@@ -166,6 +283,14 @@ class TextRazor {
 		$this->allowOverlap = $allowOverlap;
 	}
 
+    public function addEntityDictionary($dictionaryId) {
+		if(!is_string($dictionaryId)) {
+			throw new Exception('TextRazor Error: dictionaryId must be a string');
+		}
+
+		array_push($this->entityDictionaries, $dictionaryId);
+	}
+
 	public function addDbpediaTypeFilter($filter) {
 		if(!is_string($filter)) {
 			throw new Exception('TextRazor Error: filter must be a string');
@@ -189,7 +314,6 @@ class TextRazor {
 
 		array_push($this->enrichmentQueries, $query);
 	}
-
 
     public function setCleanupMode($cleanupMode) {
         if(!is_string($cleanupMode)) {
@@ -239,7 +363,6 @@ class TextRazor {
 		$builder = new TextRazorQueryBuilder();
 
 		$builder->add('extractors', $this->extractors);
-		$builder->add('apiKey', $this->apiKey);
 		$builder->add('cleanupHTML', $this->cleanupHTML);
 		$builder->add('extractors', $this->extractors);
 		$builder->add('rules', $this->rules);
@@ -249,6 +372,7 @@ class TextRazor {
 		$builder->add('entities.filterDbpediaTypes', $this->dbpediaTypeFilters);
 		$builder->add('entities.filterFreebaseTypes', $this->freebaseTypeFilters);
 		$builder->add('entities.enrichmentQueries', $this->enrichmentQueries);
+        $builder->add('entities.dictionaries', $this->entityDictionaries);
 
         $builder->add('cleanup.mode', $this->cleanupMode);
         $builder->add('cleanup.returnCleaned', $this->cleanupReturnCleaned);
@@ -268,7 +392,7 @@ class TextRazor {
         $builder = $this->buildRequest();
         $builder->add('url', $url);
 
-		return $this->sendPOST($builder->build());
+		return $this->sendRequest($builder->build());
 	}
 
 	public function analyze($text) {
@@ -279,46 +403,106 @@ class TextRazor {
         $builder = $this->buildRequest();
         $builder->add('text', $text);
 
-		return $this->sendPOST($builder->build());
+		return $this->sendRequest($builder->build());
+	}
+}
+
+class DictionaryManager extends TextRazorConnection {
+    public function __construct($apiKey = NULL) {
+        parent::__construct($apiKey);
 	}
 
-	public function sendPOST($textrazorParams) {
-		$ch = curl_init();
+    /**
+    * Creates a new dictionary using properties provided in the dict $dictionaryProperties.
+    * See the properties of class Dictionary for valid options.
+    */
+    public function createDictionary($id, $matchType=NULL, $caseInsensitive=NULL, $language=NULL) {
+        $request = array();
 
-		if ($this->enableEncryption) {
-			curl_setopt($ch, CURLOPT_URL, $this->secureEndPoint);
-		}
-		else {
-			curl_setopt($ch, CURLOPT_URL, $this->endPoint);
-		}
-
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-		if ($this->enableCompression) {
-			curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate');
+        if(!is_string($id)) {
+			throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
 		}
 
-		curl_setopt($ch, CURLOPT_POST, true );
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $textrazorParams);
+        if (isset($matchType)) { $request["matchType"] = $matchType; }
+        if (isset($caseInsensitive)) { $request["caseInsensitive"] = $caseInsensitive; }
+        if (isset($language)) { $request["language"] = $language; }
 
-		$reply = curl_exec ($ch);
+        $encodedRequest = empty($request) ? "{}" : json_encode($request);
 
-		$rc = curl_errno($ch);
-		if (0 != $rc) {
-			throw new Exception('TextRazor Error: Network problem connecting to TextRazor. CURL Error Code:' . $rc);
-		}
+        return $this->sendRequest($encodedRequest, "/entities/" . $id, "PUT");
+    }
 
-		$httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		if (200 != $httpStatus) {
-			throw new Exception('TextRazor Error: TextRazor returned HTTP code: ' . $httpStatus . ' Message:' . $reply);
-		}
+    public function allDictionaries() {
+        return $this->sendRequest("", "/entities/", "GET");
+    }
 
-		curl_close ($ch);
-		unset($ch);
+    public function deleteDictionary($id) {
+        if(!is_string($id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
+        }
 
-		$jsonReply = json_decode($reply,true);
+        return $this->sendRequest("", "/entities/" . $id, "DELETE");
+    }
 
-		return $jsonReply;
-	}
+    public function getDictionary($id) {
+        if(!is_string($id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
+        }
 
+        return $this->sendRequest("", "/entities/" . $id, "GET");
+    }
+
+    public function allEntries($id, $limit = NULL, $offset = NULL) {
+        if(!is_string($id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
+        }
+
+        $url_params = array();
+
+        if (isset($limit)) {
+            $url_params["limit"] = $limit;
+        }
+
+        if (isset($offset)) {
+            $url_params["offset"] = $offset;
+        }
+
+        return $this->sendRequest("", "/entities/" . $id . "/_all?" . http_build_query($url_params), "GET");
+    }
+
+    public function addEntries($id, $entries) {
+        if(!is_array($entries)) {
+            throw new Exception('TextRazor Error: Entries must be a List of dicts corresponding to properties of the new DictionaryEntry objects.');
+        }
+
+        if (empty($entries)) {
+            throw new Exception('TextRazor Error: Array of new entries cannot be empty.');
+        }
+
+        return $this->sendRequest(json_encode($entries), "/entities/" . $id . "/", "POST");
+    }
+
+    public function getEntry($dictionary_id, $entry_id) {
+        if(!is_string($dictionary_id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
+        }
+
+        if(!is_string($entry_id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionary Entries can only be retrieved by ID.');
+        }
+
+        return $this->sendRequest("", "/entities/" . $dictionary_id . "/" . $entry_id, "GET");
+    }
+
+    public function deleteEntry($dictionary_id, $entry_id) {
+        if(!is_string($dictionary_id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
+        }
+
+        if(!is_string($entry_id)) {
+            throw new Exception('TextRazor Error: Custom Entity Dictionary Entries can only be deleted by ID.');
+        }
+
+        return $this->sendRequest("", "/entities/" . $dictionary_id . "/" . $entry_id, "DELETE");
+    }
 }
