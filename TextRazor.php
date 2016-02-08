@@ -185,7 +185,7 @@ class TextRazorConnection {
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $textrazorParams);
 
         $headers = array();
-        $headers[] = 'X-TextRazor-Key: ' . $this->apiKey;
+        $headers[] = 'X-TextRazor-Key: ' . trim($this->apiKey);
 
         if ($contentType) {
             $headers[] = 'Content-Type: ' . $contentType;
