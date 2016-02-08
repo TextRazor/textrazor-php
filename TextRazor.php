@@ -165,7 +165,7 @@ class TextRazorConnection {
         $this->enableEncryption = $enableEncryption;
     }
 
-    public function sendRequest($textrazorParams, $path = '', $method = 'POST') {
+    public function sendRequest($textrazorParams, $path = '', $method = 'POST', $contentType = NULL) {
 		$ch = curl_init();
 
         if ($this->enableEncryption) {
@@ -186,6 +186,10 @@ class TextRazorConnection {
 
         $headers = array();
         $headers[] = 'X-TextRazor-Key: ' . $this->apiKey;
+
+        if ($contentType) {
+            $headers[] = 'Content-Type: ' . $contentType;
+        }
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
@@ -231,6 +235,8 @@ class TextRazor extends TextRazorConnection {
 
     private $downloadUserAgent = NULL;
 
+    private $classifiers = array();
+
 	public function __construct($apiKey = NULL) {
         parent::__construct($apiKey);
 	}
@@ -250,6 +256,22 @@ class TextRazor extends TextRazorConnection {
 
 		array_push($this->extractors, $extractor);
 	}
+
+    public function setClassifiers($classifiers) {
+        if(!is_array($classifiers)) {
+            throw new Exception('TextRazor Error: $classifiers must be an array of strings');
+        }
+
+        $this->classifiers = $classifiers;
+    }
+
+    public function addClassifier($classifier) {
+        if(!is_string($classifier)) {
+            throw new Exception('TextRazor Error: $classifier must be a string');
+        }
+
+        array_push($this->classifiers, $classifier);
+    }
 
 	public function setRules($rules) {
 		if(!is_string($rules)) {
@@ -356,10 +378,6 @@ class TextRazor extends TextRazorConnection {
     }
 
     private function buildRequest() {
-        if (empty($this->extractors)) {
-			throw new Exception('TextRazor Error: Please specify at least one extractor');
-		}
-
 		$builder = new TextRazorQueryBuilder();
 
 		$builder->add('extractors', $this->extractors);
@@ -373,6 +391,8 @@ class TextRazor extends TextRazorConnection {
 		$builder->add('entities.filterFreebaseTypes', $this->freebaseTypeFilters);
 		$builder->add('entities.enrichmentQueries', $this->enrichmentQueries);
         $builder->add('entities.dictionaries', $this->entityDictionaries);
+
+        $builder->add('classifiers', $this->classifiers);
 
         $builder->add('cleanup.mode', $this->cleanupMode);
         $builder->add('cleanup.returnCleaned', $this->cleanupReturnCleaned);
@@ -504,5 +524,73 @@ class DictionaryManager extends TextRazorConnection {
         }
 
         return $this->sendRequest("", "/entities/" . $dictionary_id . "/" . $entry_id, "DELETE");
+    }
+}
+
+class ClassifierManager extends TextRazorConnection {
+    public function __construct($apiKey = NULL) {
+        parent::__construct($apiKey);
+	}
+
+    public function createClassifier($classifierID, $categories) {
+        $request = array();
+
+        if(!is_string($classifierID)) {
+			throw new Exception('TextRazor Error: Classifiers must have an ID.');
+		}
+
+        if(!is_array($categories)) {
+            throw new Exception('TextRazor Error: $categories must be a List of dicts corresponding to properties of the new Category objects.');
+        }
+
+        if (empty($categories)) {
+            throw new Exception('TextRazor Error: Array of new categories cannot be empty.');
+        }
+
+        return $this->sendRequest(json_encode($categories), "/categories/" . $classifierID, "PUT", "application/json");
+    }
+
+    public function createClassifierWithCSV($classifierID, $categoriesCSV) {
+        $request = array();
+
+        if(!is_string($classifierID)) {
+			throw new Exception('TextRazor Error: Classifiers must have an ID.');
+		}
+
+        if(!is_string($categoriesCSV)) {
+            throw new Exception('TextRazor Error: $categoriesCSV must be a String containing the contents of a csv file that defines a new classifier.');
+        }
+
+        return $this->sendRequest($categoriesCSV, "/categories/" . $classifierID, "PUT", "application/csv");
+    }
+
+    public function deleteClassifier($classifierID) {
+        return $this->sendRequest("", "/categories/" . $classifierID, "DELETE");
+    }
+
+    public function allCategories($classifierID, $limit = NULL, $offset = NULL) {
+        if(!is_string($classifierID)) {
+            throw new Exception('TextRazor Error: Classifiers must have an ID.');
+        }
+
+        $url_params = array();
+
+        if (isset($limit)) {
+            $url_params["limit"] = $limit;
+        }
+
+        if (isset($offset)) {
+            $url_params["offset"] = $offset;
+        }
+
+        return $this->sendRequest("", "/categories/" . $classifierID . "/_all?" . http_build_query($url_params), "GET");
+    }
+
+    public function deleteCategory($classifierID, $categoryID) {
+        return $this->sendRequest("", "/categories/" . $classifierID . "/" . $categoryID, "DELETE");
+    }
+
+    public function getCategory($classifierID, $categoryID) {
+        return $this->sendRequest("", "/categories/" . $classifierID . "/" . $categoryID, "GET");
     }
 }
