@@ -594,3 +594,13 @@ class ClassifierManager extends TextRazorConnection {
         return $this->sendRequest("", "/categories/" . $classifierID . "/" . $categoryID, "GET");
     }
 }
+
+class AccountManager extends TextRazorConnection {
+    public function __construct($apiKey = NULL) {
+        parent::__construct($apiKey);
+	}
+
+    public function getAccount() {
+        return $this->sendRequest("", "/account/", "GET");
+    }
+}

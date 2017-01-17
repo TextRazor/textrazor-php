@@ -4,15 +4,22 @@ require_once('TextRazor.php');
 
 TextRazorSettings::setApiKey("YOUR_API_KEY_HERE");
 
+function testAccount() {
+    $accountManager = new AccountManager();
+    print_r($accountManager->getAccount());
+}
+
 function testAnalysis() {
     $textrazor = new TextRazor();
 
     $textrazor->addExtractor('entities');
     $textrazor->addExtractor('words');
+    $textrazor->addExtractor('spelling');
+
     $textrazor->addEnrichmentQuery("fbase:/location/location/geolocation>/location/geocode/latitude");
     $textrazor->addEnrichmentQuery("fbase:/location/location/geolocation>/location/geocode/longitude");
 
-    $text = 'LONDON - Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
+    $text = 'LONDON - Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Paorama investigation has found.';
 
     $response = $textrazor->analyze($text);
     if (isset($response['response']['entities'])) {
@@ -112,6 +119,7 @@ function testEntityDictionary() {
 
 }
 
+testAccount();
 testAnalysis();
 testEntityDictionary();
 testClassifier();
