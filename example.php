@@ -20,7 +20,7 @@ function testAnalysis()
     $textrazor->addEnrichmentQuery('fbase:/location/location/geolocation>/location/geocode/latitude');
     $textrazor->addEnrichmentQuery('fbase:/location/location/geolocation>/location/geocode/longitude');
 
-    $text = 'LONDON - Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Paorama investigation has found.';
+    $text = 'LONDON - Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
 
     $response = $textrazor->analyze($text);
     if (isset($response['response']['entities'])) {

@@ -493,6 +493,14 @@ class DictionaryManager extends TextRazorConnection
     /**
      * Creates a new dictionary using properties provided in the dict $dictionaryProperties.
      * See the properties of class Dictionary for valid options.
+     *
+     * @param      $id
+     * @param null $matchType
+     * @param null $caseInsensitive
+     * @param null $language
+     *
+     * @return mixed
+     * @throws \Exception
      */
     public function createDictionary($id, $matchType = null, $caseInsensitive = null, $language = null)
     {
@@ -608,8 +616,6 @@ class ClassifierManager extends TextRazorConnection
 
     public function createClassifier($classifierID, $categories)
     {
-        $request = [];
-
         if ( ! is_string($classifierID)) {
             throw new Exception('TextRazor Error: Classifiers must have an ID.');
         }
@@ -627,8 +633,6 @@ class ClassifierManager extends TextRazorConnection
 
     public function createClassifierWithCSV($classifierID, $categoriesCSV)
     {
-        $request = [];
-
         if ( ! is_string($classifierID)) {
             throw new Exception('TextRazor Error: Classifiers must have an ID.');
         }
