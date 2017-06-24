@@ -26,13 +26,13 @@ function testAnalysis()
     if (isset($response['response']['entities'])) {
         foreach ($response['response']['entities'] as $entity) {
             print('Entity ID: ' . $entity['entityId']);
-            $entity_data = $entity['data'];
+            $entityData = $entity['data'];
 
-            if ( ! is_null($entity_data)) {
+            if ( ! is_null($entityData)) {
                 print(PHP_EOL);
-                print('Entity Latitude: ' . $entity_data['fbase:/location/location/geolocation>/location/geocode/latitude'][0]);
+                print('Entity Latitude: ' . $entityData['fbase:/location/location/geolocation>/location/geocode/latitude'][0]);
                 print(PHP_EOL);
-                print('Entity Longitude: ' . $entity_data['fbase:/location/location/geolocation>/location/geocode/longitude'][0]);
+                print('Entity Longitude: ' . $entityData['fbase:/location/location/geolocation>/location/geocode/longitude'][0]);
             }
             print(PHP_EOL);
         }
@@ -88,10 +88,10 @@ function testEntityDictionary()
     // Define a new dictionary, then add some test entries
     print_r($textrazorDictionary->createDictionary($dictionaryId, 'STEM', true, 'eng'));
 
-    $new_entities = [];
-    array_push($new_entities, ['id' => 'TV_1', 'text' => 'BBC Panorama']);
+    $newEntities = [];
+    array_push($newEntities, ['id' => 'TV_1', 'text' => 'BBC Panorama']);
 
-    print_r($textrazorDictionary->addEntries($dictionaryId, $new_entities));
+    print_r($textrazorDictionary->addEntries($dictionaryId, $newEntities));
 
     // To use the new dictionary, simply add its ID to your analysis request.
 

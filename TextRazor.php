@@ -125,7 +125,7 @@ class TextRazorConnection
 
     private $enableCompression;
 
-    function __construct($apiKey)
+    public function __construct($apiKey)
     {
         $this->apiKey            = TextRazorSettings::getApiKey();
         $this->endPoint          = TextRazorSettings::getEndPoint();
@@ -193,22 +193,22 @@ class TextRazorConnection
 
     public function sendRequest($textrazorParams, $path = '', $method = 'POST', $contentType = null)
     {
-        $ch = curl_init();
+        $curl = curl_init();
 
         if ($this->enableEncryption) {
-            curl_setopt($ch, CURLOPT_URL, $this->secureEndPoint . $path);
+            curl_setopt($curl, CURLOPT_URL, $this->secureEndPoint . $path);
         } else {
-            curl_setopt($ch, CURLOPT_URL, $this->endPoint . $path);
+            curl_setopt($curl, CURLOPT_URL, $this->endPoint . $path);
         }
 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         if ($this->enableCompression) {
-            curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate');
+            curl_setopt($curl, CURLOPT_ENCODING, 'gzip,deflate');
         }
 
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $textrazorParams);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $textrazorParams);
 
         $headers   = [];
         $headers[] = 'X-TextRazor-Key: ' . trim($this->apiKey);
@@ -217,22 +217,22 @@ class TextRazorConnection
             $headers[] = 'Content-Type: ' . $contentType;
         }
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
-        $reply = curl_exec($ch);
+        $reply = curl_exec($curl);
 
-        $rc = curl_errno($ch);
-        if (0 != $rc) {
-            throw new Exception('TextRazor Error: Network problem connecting to TextRazor. CURL Error Code:' . $rc);
+        $curlError = curl_errno($curl);
+        if (0 != $curlError) {
+            throw new Exception('TextRazor Error: Network problem connecting to TextRazor. CURL Error Code:' . $curlError);
         }
 
-        $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $httpStatus = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         if (200 != $httpStatus) {
             throw new Exception('TextRazor Error: TextRazor returned HTTP code: ' . $httpStatus . ' Message:' . $reply);
         }
 
-        curl_close($ch);
-        unset($ch);
+        curl_close($curl);
+        unset($curl);
 
         $jsonReply = json_decode($reply, true);
 
@@ -494,7 +494,7 @@ class DictionaryManager extends TextRazorConnection
      * Creates a new dictionary using properties provided in the dict $dictionaryProperties.
      * See the properties of class Dictionary for valid options.
      *
-     * @param      $id
+     * @param      $entityId
      * @param null $matchType
      * @param null $caseInsensitive
      * @param null $language
@@ -502,11 +502,11 @@ class DictionaryManager extends TextRazorConnection
      * @return mixed
      * @throws \Exception
      */
-    public function createDictionary($id, $matchType = null, $caseInsensitive = null, $language = null)
+    public function createDictionary($entityId, $matchType = null, $caseInsensitive = null, $language = null)
     {
         $request = [];
 
-        if ( ! is_string($id)) {
+        if ( ! is_string($entityId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
         }
 
@@ -522,7 +522,7 @@ class DictionaryManager extends TextRazorConnection
 
         $encodedRequest = empty($request) ? '{}' : json_encode($request);
 
-        return $this->sendRequest($encodedRequest, '/entities/' . $id, 'PUT');
+        return $this->sendRequest($encodedRequest, '/entities/' . $entityId, 'PUT');
     }
 
     public function allDictionaries()
@@ -530,44 +530,44 @@ class DictionaryManager extends TextRazorConnection
         return $this->sendRequest('', '/entities/', 'GET');
     }
 
-    public function deleteDictionary($id)
+    public function deleteDictionary($entityId)
     {
-        if ( ! is_string($id)) {
+        if ( ! is_string($entityId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
         }
 
-        return $this->sendRequest('', '/entities/' . $id, 'DELETE');
+        return $this->sendRequest('', '/entities/' . $entityId, 'DELETE');
     }
 
-    public function getDictionary($id)
+    public function getDictionary($entityId)
     {
-        if ( ! is_string($id)) {
+        if ( ! is_string($entityId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
         }
 
-        return $this->sendRequest('', '/entities/' . $id, 'GET');
+        return $this->sendRequest('', '/entities/' . $entityId, 'GET');
     }
 
-    public function allEntries($id, $limit = null, $offset = null)
+    public function allEntries($entityId, $limit = null, $offset = null)
     {
-        if ( ! is_string($id)) {
+        if ( ! is_string($entityId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
         }
 
-        $url_params = [];
+        $urlParams = [];
 
         if (isset($limit)) {
-            $url_params['limit'] = $limit;
+            $urlParams['limit'] = $limit;
         }
 
         if (isset($offset)) {
-            $url_params['offset'] = $offset;
+            $urlParams['offset'] = $offset;
         }
 
-        return $this->sendRequest('', '/entities/' . $id . '/_all?' . http_build_query($url_params), 'GET');
+        return $this->sendRequest('', '/entities/' . $entityId . '/_all?' . http_build_query($urlParams), 'GET');
     }
 
-    public function addEntries($id, $entries)
+    public function addEntries($entityId, $entries)
     {
         if ( ! is_array($entries)) {
             throw new Exception('TextRazor Error: Entries must be a List of dicts corresponding to properties of the new DictionaryEntry objects.');
@@ -577,33 +577,33 @@ class DictionaryManager extends TextRazorConnection
             throw new Exception('TextRazor Error: Array of new entries cannot be empty.');
         }
 
-        return $this->sendRequest(json_encode($entries), '/entities/' . $id . '/', 'POST');
+        return $this->sendRequest(json_encode($entries), '/entities/' . $entityId . '/', 'POST');
     }
 
-    public function getEntry($dictionary_id, $entry_id)
+    public function getEntry($dictionaryId, $entryId)
     {
-        if ( ! is_string($dictionary_id)) {
+        if ( ! is_string($dictionaryId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
         }
 
-        if ( ! is_string($entry_id)) {
+        if ( ! is_string($entryId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionary Entries can only be retrieved by ID.');
         }
 
-        return $this->sendRequest('', '/entities/' . $dictionary_id . '/' . $entry_id, 'GET');
+        return $this->sendRequest('', '/entities/' . $dictionaryId . '/' . $entryId, 'GET');
     }
 
-    public function deleteEntry($dictionary_id, $entry_id)
+    public function deleteEntry($dictionaryId, $entryId)
     {
-        if ( ! is_string($dictionary_id)) {
+        if ( ! is_string($dictionaryId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionaries must have an ID.');
         }
 
-        if ( ! is_string($entry_id)) {
+        if ( ! is_string($entryId)) {
             throw new Exception('TextRazor Error: Custom Entity Dictionary Entries can only be deleted by ID.');
         }
 
-        return $this->sendRequest('', '/entities/' . $dictionary_id . '/' . $entry_id, 'DELETE');
+        return $this->sendRequest('', '/entities/' . $dictionaryId . '/' . $entryId, 'DELETE');
     }
 }
 
@@ -655,17 +655,17 @@ class ClassifierManager extends TextRazorConnection
             throw new Exception('TextRazor Error: Classifiers must have an ID.');
         }
 
-        $url_params = [];
+        $urlParams = [];
 
         if (isset($limit)) {
-            $url_params['limit'] = $limit;
+            $urlParams['limit'] = $limit;
         }
 
         if (isset($offset)) {
-            $url_params['offset'] = $offset;
+            $urlParams['offset'] = $offset;
         }
 
-        return $this->sendRequest('', '/categories/' . $classifierID . '/_all?' . http_build_query($url_params), 'GET');
+        return $this->sendRequest('', '/categories/' . $classifierID . '/_all?' . http_build_query($urlParams), 'GET');
     }
 
     public function deleteCategory($classifierID, $categoryID)
