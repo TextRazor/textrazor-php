@@ -1,7 +1,7 @@
 <?php
 require_once 'TextRazor.php';
 
-TextRazorSettings::setApiKey("YOUR_API_KEY_HERE");
+TextRazorSettings::setApiKey('YOUR_API_KEY_HERE');
 
 function testAccount()
 {
@@ -17,22 +17,22 @@ function testAnalysis()
     $textrazor->addExtractor('words');
     $textrazor->addExtractor('spelling');
 
-    $textrazor->addEnrichmentQuery("fbase:/location/location/geolocation>/location/geocode/latitude");
-    $textrazor->addEnrichmentQuery("fbase:/location/location/geolocation>/location/geocode/longitude");
+    $textrazor->addEnrichmentQuery('fbase:/location/location/geolocation>/location/geocode/latitude');
+    $textrazor->addEnrichmentQuery('fbase:/location/location/geolocation>/location/geocode/longitude');
 
     $text = 'LONDON - Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Paorama investigation has found.';
 
     $response = $textrazor->analyze($text);
     if (isset($response['response']['entities'])) {
         foreach ($response['response']['entities'] as $entity) {
-            print("Entity ID: " . $entity['entityId']);
+            print('Entity ID: ' . $entity['entityId']);
             $entity_data = $entity['data'];
 
             if ( ! is_null($entity_data)) {
                 print(PHP_EOL);
-                print("Entity Latitude: " . $entity_data["fbase:/location/location/geolocation>/location/geocode/latitude"][0]);
+                print('Entity Latitude: ' . $entity_data['fbase:/location/location/geolocation>/location/geocode/latitude'][0]);
                 print(PHP_EOL);
-                print("Entity Longitude: " . $entity_data["fbase:/location/location/geolocation>/location/geocode/longitude"][0]);
+                print('Entity Longitude: ' . $entity_data['fbase:/location/location/geolocation>/location/geocode/longitude'][0]);
             }
             print(PHP_EOL);
         }
@@ -53,8 +53,8 @@ function testClassifier()
 
     // Define some new categories and upload them as a new classifier.
     $newCategories = [];
-    array_push($newCategories, ['categoryId' => '1', 'query' => "concept('banking')"]);
-    array_push($newCategories, ['categoryId' => '2', 'query' => "concept('health')"]);
+    array_push($newCategories, ['categoryId' => '1', 'query' => 'concept("banking")']);
+    array_push($newCategories, ['categoryId' => '2', 'query' => 'concept("health")']);
 
     $textrazorClassifier->createClassifier($classifierId, $newCategories);
 
@@ -86,10 +86,10 @@ function testEntityDictionary()
     }
 
     // Define a new dictionary, then add some test entries
-    print_r($textrazorDictionary->createDictionary($dictionaryId, 'STEM', true, "eng"));
+    print_r($textrazorDictionary->createDictionary($dictionaryId, 'STEM', true, 'eng'));
 
     $new_entities = [];
-    array_push($new_entities, ["id" => "TV_1", "text" => "BBC Panorama"]);
+    array_push($new_entities, ['id' => 'TV_1', 'text' => 'BBC Panorama']);
 
     print_r($textrazorDictionary->addEntries($dictionaryId, $new_entities));
 
@@ -108,7 +108,7 @@ function testEntityDictionary()
 
     // The client offers various methods for manipulating your stored dictionary entries.
 
-    print_r($textrazorDictionary->getEntry($dictionaryId, "TV_1"));
+    print_r($textrazorDictionary->getEntry($dictionaryId, 'TV_1'));
 
     print_r($textrazorDictionary->allEntries($dictionaryId, 10));
 
