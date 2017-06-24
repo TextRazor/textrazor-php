@@ -26,7 +26,7 @@ function testAnalysis()
     if (isset($response['response']['entities'])) {
         foreach ($response['response']['entities'] as $entity) {
             print('Entity ID: ' . $entity['entityId']);
-            $entityData = $entity['data'];
+            $entityData = (isset($entity['data']) ? $entity['data'] : null);
 
             if ( ! is_null($entityData)) {
                 print(PHP_EOL);
