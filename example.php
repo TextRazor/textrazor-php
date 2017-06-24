@@ -1,15 +1,16 @@
 <?php
-
-require_once('TextRazor.php');
+require_once 'TextRazor.php';
 
 TextRazorSettings::setApiKey("YOUR_API_KEY_HERE");
 
-function testAccount() {
+function testAccount()
+{
     $accountManager = new AccountManager();
     print_r($accountManager->getAccount());
 }
 
-function testAnalysis() {
+function testAnalysis()
+{
     $textrazor = new TextRazor();
 
     $textrazor->addExtractor('entities');
@@ -25,35 +26,35 @@ function testAnalysis() {
     if (isset($response['response']['entities'])) {
         foreach ($response['response']['entities'] as $entity) {
             print("Entity ID: " . $entity['entityId']);
-		    $entity_data = $entity['data'];
+            $entity_data = $entity['data'];
 
-            if (!is_null($entity_data)) {
-			    print(PHP_EOL);
-			    print("Entity Latitude: " . $entity_data["fbase:/location/location/geolocation>/location/geocode/latitude"][0]);
-			    print(PHP_EOL);
-			    print("Entity Longitude: " . $entity_data["fbase:/location/location/geolocation>/location/geocode/longitude"][0]);
-		    }
-		    print(PHP_EOL);
+            if ( ! is_null($entity_data)) {
+                print(PHP_EOL);
+                print("Entity Latitude: " . $entity_data["fbase:/location/location/geolocation>/location/geocode/latitude"][0]);
+                print(PHP_EOL);
+                print("Entity Longitude: " . $entity_data["fbase:/location/location/geolocation>/location/geocode/longitude"][0]);
+            }
+            print(PHP_EOL);
         }
     }
 }
 
-function testClassifier() {
+function testClassifier()
+{
     $textrazorClassifier = new ClassifierManager();
 
     $classifierId = 'test_cats_php';
 
     try {
         print_r($textrazorClassifier->deleteClassifier($classifierId));
-    }
-    catch (Exception $e){
+    } catch (Exception $e) {
         // Silently ignore missing classifier for now.
     }
 
     // Define some new categories and upload them as a new classifier.
-    $newCategories = array();
-    array_push($newCategories, array('categoryId' => '1', 'query' => "concept('banking')"));
-    array_push($newCategories, array('categoryId' => '2', 'query' => "concept('health')"));
+    $newCategories = [];
+    array_push($newCategories, ['categoryId' => '1', 'query' => "concept('banking')"]);
+    array_push($newCategories, ['categoryId' => '2', 'query' => "concept('health')"]);
 
     $textrazorClassifier->createClassifier($classifierId, $newCategories);
 
@@ -61,7 +62,7 @@ function testClassifier() {
     $textrazor = new TextRazor();
     $textrazor->addClassifier($classifierId);
 
-    $text = 'Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
+    $text     = 'Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
     $response = $textrazor->analyze($text);
 
     print_r($response['response']);
@@ -72,23 +73,23 @@ function testClassifier() {
     print_r($textrazorClassifier->deleteClassifier($classifierId));
 }
 
-function testEntityDictionary() {
+function testEntityDictionary()
+{
     $textrazorDictionary = new DictionaryManager();
 
     $dictionaryId = 'test_ents_php';
 
     try {
         print_r($textrazorDictionary->deleteDictionary($dictionaryId));
-    }
-    catch (Exception $e){
+    } catch (Exception $e) {
         // Silently ignore missing dictionary for now.
     }
 
     // Define a new dictionary, then add some test entries
     print_r($textrazorDictionary->createDictionary($dictionaryId, 'STEM', true, "eng"));
 
-    $new_entities = array();
-    array_push($new_entities, array("id" => "TV_1", "text" => "BBC Panorama"));
+    $new_entities = [];
+    array_push($new_entities, ["id" => "TV_1", "text" => "BBC Panorama"]);
 
     print_r($textrazorDictionary->addEntries($dictionaryId, $new_entities));
 
@@ -98,7 +99,7 @@ function testEntityDictionary() {
 
     $textrazor->addEntityDictionary($dictionaryId);
 
-    $text = 'Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
+    $text     = 'Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
     $response = $textrazor->analyze($text);
 
     // The matched entities will be available in the response
@@ -116,7 +117,6 @@ function testEntityDictionary() {
     print_r($textrazorDictionary->allDictionaries());
 
     print_r($textrazorDictionary->deleteDictionary($dictionaryId));
-
 }
 
 testAccount();
