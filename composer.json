@@ -1,10 +1,21 @@
 {
-    "name": "textrazor/textrazor-php",
-    "type": "library",
-    "description": "PHP SDK for the TextRazor Text Analytics API",
-    "homepage": "https://github.com/TextRazor/textrazor-php",
-    "license": "MIT",
-    "autoload": {
-        "classmap": ["."]
-    }
+  "name": "textrazor/textrazor-php",
+  "type": "library",
+  "description": "PHP SDK for the TextRazor Text Analytics API",
+  "keywords": [
+    "TextRazor",
+    "API",
+    "Client"
+  ],
+  "homepage": "https://github.com/TextRazor/textrazor-php",
+  "license": "MIT",
+  "require": {
+    "ext-curl": "*",
+    "php": ">=5.6.0"
+  },
+  "autoload": {
+    "classmap": [
+      "."
+    ]
+  }
 }
