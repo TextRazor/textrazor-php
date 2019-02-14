@@ -272,6 +272,8 @@ class TextRazor extends TextRazorConnection
 
     private $classifiers          = [];
 
+    private $classifierMaxCategories = null;
+
     public function __construct($apiKey = null)
     {
         parent::__construct($apiKey);
@@ -430,6 +432,11 @@ class TextRazor extends TextRazorConnection
         $this->downloadUserAgent = $downloadUserAgent;
     }
 
+    public function setClassifierMaxCategories($classifierMaxCategories)
+    {
+        $this->classifierMaxCategories = $classifierMaxCategories;
+    }
+
     public function analyzeUrl($url)
     {
         if ( ! is_string($url)) {
@@ -459,6 +466,7 @@ class TextRazor extends TextRazorConnection
         $builder->add('entities.dictionaries', $this->entityDictionaries);
 
         $builder->add('classifiers', $this->classifiers);
+        $builder->add('classifier.maxCategories', $this->classifierMaxCategories);
 
         $builder->add('cleanup.mode', $this->cleanupMode);
         $builder->add('cleanup.returnCleaned', $this->cleanupReturnCleaned);
