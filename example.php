@@ -17,23 +17,12 @@ function testAnalysis()
     $textrazor->addExtractor('words');
     $textrazor->addExtractor('spelling');
 
-    $textrazor->addEnrichmentQuery('fbase:/location/location/geolocation>/location/geocode/latitude');
-    $textrazor->addEnrichmentQuery('fbase:/location/location/geolocation>/location/geocode/longitude');
-
     $text = 'LONDON - Barclays misled shareholders and the public about one of the biggest investments in the banks history, a BBC Panorama investigation has found.';
 
     $response = $textrazor->analyze($text);
     if (isset($response['response']['entities'])) {
         foreach ($response['response']['entities'] as $entity) {
             print('Entity ID: ' . $entity['entityId']);
-            $entityData = (isset($entity['data']) ? $entity['data'] : null);
-
-            if ( ! is_null($entityData)) {
-                print(PHP_EOL);
-                print('Entity Latitude: ' . $entityData['fbase:/location/location/geolocation>/location/geocode/latitude'][0]);
-                print(PHP_EOL);
-                print('Entity Longitude: ' . $entityData['fbase:/location/location/geolocation>/location/geocode/longitude'][0]);
-            }
             print(PHP_EOL);
         }
     }

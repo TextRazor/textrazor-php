@@ -42,6 +42,12 @@ class TextRazorSettings
 
     private static $enableCompression = true;
 
+    // TextRazor has an internal timeout of 30 seconds, after which it will return an error.
+    // We set a higher default here to prevent any transport issues causing a client hang.
+    private static $connectTimeoutSeconds = 120;
+
+    private static $timeoutSeconds = 120;
+
     public static function getApiKey()
     {
         return self::$apiKey;
@@ -111,6 +117,38 @@ class TextRazorSettings
 
         self::$enableEncryption = $enableEncryption;
     }
+
+     /**
+     * Sets the connection phase timeout in seconds, or 0 for the default. 
+     * See https://curl.se/libcurl/c/CURLOPT_CONNECTTIMEOUT.html for details.
+     * 
+     * This timeout will not interrupt TextRazor's analysis process, which has a timeout of its own of 30 seconds.
+     */
+    public static function setConnectTimeoutSeconds($connectTimeoutSeconds)
+    {
+        self::$connectTimeoutSeconds = $connectTimeoutSeconds;
+    }
+
+    public static function getConnectTimeoutSeconds()
+    {
+        return self::$connectTimeoutSeconds;
+    }
+
+    /**
+     * Sets the data transfer timeout in seconds, or 0 for the default. 
+     * See https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html for details.
+     * 
+     * This timeout will not interrupt TextRazor's analysis process, which has a timeout of its own of 30 seconds.
+     */
+    public static function setTimeoutSeconds($timeoutSeconds)
+    {
+        self::$timeoutSeconds = $timeoutSeconds;
+    }
+
+    public static function getTimeoutSeconds()
+    {
+        return self::$timeoutSeconds;
+    }
 }
 
 class TextRazorConnection
@@ -125,6 +163,10 @@ class TextRazorConnection
 
     private $enableCompression;
 
+    private $timeoutSeconds;
+
+    private $connectTimeoutSeconds;
+
     public function __construct($apiKey)
     {
         $this->apiKey            = TextRazorSettings::getApiKey();
@@ -132,6 +174,8 @@ class TextRazorConnection
         $this->secureEndPoint    = TextRazorSettings::getSecureEndpoint();
         $this->enableEncryption  = TextRazorSettings::getEnableEncryption();
         $this->enableCompression = TextRazorSettings::getEnableCompression();
+        $this->timeoutSeconds = TextRazorSettings::getTimeoutSeconds();
+        $this->connectTimeoutSeconds = TextRazorSettings::getConnectTimeoutSeconds();
 
         if (isset($apiKey)) {
             $this->apiKey = $apiKey;
@@ -173,6 +217,16 @@ class TextRazorConnection
         $this->secureEndPoint = $endPoint;
     }
 
+    public function setConnectTimeoutSeconds($connectTimeoutSeconds)
+    {
+        $this->connectTimeoutSeconds = $connectTimeoutSeconds;
+    }
+
+    public function setTimeoutSeconds($timeoutSeconds)
+    {
+        $this->timeoutSeconds = $timeoutSeconds;
+    }
+
     public function setEnableCompression($enableCompression)
     {
         if ( ! is_bool($enableCompression)) {
@@ -206,6 +260,9 @@ class TextRazorConnection
         if ($this->enableCompression) {
             curl_setopt($curl, CURLOPT_ENCODING, 'gzip,deflate');
         }
+
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->connectTimeoutSeconds); 
+        curl_setopt($curl, CURLOPT_TIMEOUT, $this->timeoutSeconds);
 
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $textrazorParams);
